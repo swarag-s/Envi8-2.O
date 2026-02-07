@@ -23,13 +23,15 @@ import { useIssues } from '../context/IssueContext';
 import './WardMemberDashboard.css';
 
 const WardMemberDashboard = ({ onLogout, userName = "Suresh Menon", wardNumber = "14" }) => {
-    const { issues, updateIssueStatus, wardPlaces, addWardPlace, updateWardPlace, deleteWardPlace } = useIssues();
+    const { issues, updateIssueStatus, wardPlaces, addWardPlace, updateWardPlace, deleteWardPlace, getIssueByToken } = useIssues();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [tokenSearchId, setTokenSearchId] = useState('');
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [uploadedImage, setUploadedImage] = useState(null);
     const [aiCheckResult, setAiCheckResult] = useState(null);
+    const [searchedTokenIssue, setSearchedTokenIssue] = useState(null);
+    const [showTokenDetailsModal, setShowTokenDetailsModal] = useState(false);
 
     // Ward Places State
     const [showPlaceModal, setShowPlaceModal] = useState(false);
@@ -40,11 +42,23 @@ const WardMemberDashboard = ({ onLogout, userName = "Suresh Menon", wardNumber =
     const wardIssues = issues.filter(issue => issue.ward === `Ward ${wardNumber}`);
     const myPlaces = wardPlaces[wardNumber] || [];
 
-    // Stats
     const stats = {
         ticketsRaised: wardIssues.length,
         solvedTickets: wardIssues.filter(i => i.status === 'Solved').length,
         pendingTickets: wardIssues.filter(i => i.status === 'Pending').length,
+    };
+
+    const handleTokenSearch = () => {
+        if (!tokenSearchId) return;
+
+        const issue = getIssueByToken(tokenSearchId);
+        if (issue) {
+            setSearchedTokenIssue(issue);
+            setShowTokenDetailsModal(true);
+            setTokenSearchId(''); // Clear search
+        } else {
+            alert('Token ID not found!');
+        }
     };
 
     const handleImageUpload = async (e) => {
@@ -153,13 +167,17 @@ const WardMemberDashboard = ({ onLogout, userName = "Suresh Menon", wardNumber =
                     <h1>Ward {wardNumber} Overview</h1>
                 </div>
                 <div className="header-actions">
-                    <button className="queue-status-badge">
-                        <span className="status-dot"></span>
-                        LIVE UPDATES
-                    </button>
-                    <button className="icon-btn">
-                        <Bell size={20} />
-                    </button>
+                    <div className="search-bar-container" style={{ display: 'flex', gap: '0.5rem', marginRight: '1rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Search Token ID..."
+                            value={tokenSearchId}
+                            onChange={(e) => setTokenSearchId(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTokenSearch()}
+                            style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                        />
+                        <button onClick={handleTokenSearch} className="icon-btn"><Search size={20} /></button>
+                    </div>
                 </div>
             </div>
 
@@ -294,6 +312,70 @@ const WardMemberDashboard = ({ onLogout, userName = "Suresh Menon", wardNumber =
                         <div className="modal-footer">
                             <button onClick={() => setUploadModalOpen(false)}>Cancel</button>
                             <button className="btn-submit" onClick={handleSubmitSolution} disabled={!uploadedImage}>Mark Solved</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Token Details Modal */}
+            {showTokenDetailsModal && searchedTokenIssue && (
+                <div className="modal-overlay" onClick={() => setShowTokenDetailsModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                        <div className="modal-header">
+                            <h2>Issue Details</h2>
+                            <button className="close-btn" onClick={() => setShowTokenDetailsModal(false)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '2rem' }}>
+                            <div className="searched-issue-details">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <span className={`status-badge ${searchedTokenIssue.status.toLowerCase()}`}>{searchedTokenIssue.status}</span>
+                                    <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>{new Date(searchedTokenIssue.createdAt).toLocaleString()}</span>
+                                </div>
+
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{searchedTokenIssue.title}</h3>
+                                <p style={{ color: '#6B7280', marginBottom: '1.5rem' }}>Token ID: <strong style={{ color: '#111827' }}>{searchedTokenIssue.tokenId}</strong></p>
+
+                                {searchedTokenIssue.imageUrl && (
+                                    <div style={{ marginBottom: '1.5rem', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <img src={searchedTokenIssue.imageUrl} alt="Issue" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Location</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.location || searchedTokenIssue.placeName}</div>
+                                        <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>{searchedTokenIssue.ward}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Department</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.department}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Category</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.category || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Urgency</div>
+                                        <div style={{ fontWeight: '500', color: searchedTokenIssue.urgency === 'High' ? '#EF4444' : '#10B981' }}>{searchedTokenIssue.urgency}</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Description</div>
+                                    <p style={{ lineHeight: '1.5', color: '#374151' }}>{searchedTokenIssue.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-footer" style={{ borderTop: '1px solid #E5E7EB', padding: '1rem 2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button className="btn-cancel" onClick={() => setShowTokenDetailsModal(false)}>Close</button>
+                            <button className="btn-submit" onClick={() => {
+                                setShowTokenDetailsModal(false);
+                                setSelectedTicket(searchedTokenIssue);
+                                setUploadModalOpen(true);
+                            }}>Take Action</button>
                         </div>
                     </div>
                 </div>

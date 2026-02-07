@@ -16,79 +16,30 @@ import {
     Building,
     Megaphone
 } from 'lucide-react';
+import { useIssues } from '../context/IssueContext';
 import './DepartmentDashboard.css';
 
 const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udnNumber = "WA-KZD-001" }) => {
+    const { issues, getIssueByToken, updateIssue } = useIssues();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [tokenSearchId, setTokenSearchId] = useState('');
+    const [searchedTokenIssue, setSearchedTokenIssue] = useState(null); // Found issue from search
+    const [showTokenDetailsModal, setShowTokenDetailsModal] = useState(false);
+
+    // Filter issues for this department (Assuming departmentName matches exactly or partially)
+    // For demo purposes, let's include 'General' or unassigned ones too, or just all for visibility
+    const departmentIssues = issues.filter(issue =>
+        issue.department === departmentName ||
+        issue.department === 'Pending Assignment' ||
+        issue.department.includes(departmentName)
+    );
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [uploadedImage, setUploadedImage] = useState(null);
     const [aiCheckResult, setAiCheckResult] = useState(null);
 
-    // Mock data - similar structure but department-specific
-    const stats = {
-        ticketsAssigned: 156,
-        ticketsAssignedChange: 8,
-        solvedTickets: 142,
-        solvedRate: 91,
-        pendingTickets: 14,
-        backlog: 'On Track'
-    };
-
-    const queueStatus = {
-        balanceTokens: 8,
-        dailyGoal: 85,
-        dailyGoalProgress: 85
-    };
-
-    const tickets = [
-        {
-            id: 'WA-4092',
-            description: 'Water Pipe Burst',
-            location: 'Beach Road, Ward 12',
-            date: 'Oct 24, 2023',
-            status: 'In Progress',
-            priority: 'high',
-            assignee: 'Team A'
-        },
-        {
-            id: 'WA-4091',
-            description: 'Low Water Pressure',
-            location: 'Market Area, Ward 8',
-            date: 'Oct 24, 2023',
-            status: 'Urgent',
-            priority: 'high',
-            assignee: 'Team B'
-        },
-        {
-            id: 'WA-4088',
-            description: 'Water Supply Interruption',
-            location: 'Residential Colony, Ward 5',
-            date: 'Oct 23, 2023',
-            status: 'Pending',
-            priority: 'medium',
-            assignee: 'Unassigned'
-        },
-        {
-            id: 'WA-4085',
-            description: 'Valve Replacement',
-            location: 'Main Road Junction, Ward 14',
-            date: 'Oct 23, 2023',
-            status: 'Assigned',
-            priority: 'medium',
-            assignee: 'Team C'
-        },
-        {
-            id: 'WA-4082',
-            description: 'Pipeline Maintenance',
-            location: 'School Area, Ward 10',
-            date: 'Oct 22, 2023',
-            status: 'Pending',
-            priority: 'low',
-            assignee: 'Team A'
-        }
-    ];
+    // Use departmentIssues instead of mock tickets
+    const tickets = departmentIssues;
 
     const departmentUpdates = [
         {
@@ -160,15 +111,32 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
         }, 2000);
     };
 
+    const handleTokenSearch = () => {
+        if (!tokenSearchId) return;
+
+        const issue = getIssueByToken(tokenSearchId);
+        if (issue) {
+            setSearchedTokenIssue(issue);
+            setShowTokenDetailsModal(true);
+            setTokenSearchId(''); // Clear search
+        } else {
+            alert('Token ID not found!');
+        }
+    };
+
     const handleSubmitSolution = () => {
-        if (aiCheckResult && !aiCheckResult.isAI) {
+        if (selectedTicket) {
+            // In real app, upload image URL here
+            updateIssue(selectedTicket.tokenId, {
+                status: 'Solved',
+                resolutionImage: uploadedImage,
+                resolvedAt: new Date().toISOString()
+            });
             alert('Solution submitted successfully!');
             setUploadModalOpen(false);
             setUploadedImage(null);
             setAiCheckResult(null);
             setSelectedTicket(null);
-        } else {
-            alert('Cannot submit AI-generated images. Please upload authentic photo.');
         }
     };
 
@@ -252,10 +220,12 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                         <Search size={18} />
                         <input
                             type="text"
-                            placeholder="Search by Token ID or Location"
+                            placeholder="Enter Token ID to View Details (e.g. TK-14-...)"
                             value={tokenSearchId}
                             onChange={(e) => setTokenSearchId(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTokenSearch()}
                         />
+                        <button className="check-btn dept" onClick={handleTokenSearch} style={{ marginLeft: '10px' }}>Search</button>
                     </div>
 
                     {/* Token Table */}
@@ -268,17 +238,17 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                             <div className="th action">ACTION</div>
                         </div>
                         <div className="table-body">
-                            {tickets.map((ticket) => (
-                                <div key={ticket.id} className="table-row">
+                            {tickets.length > 0 ? tickets.map((ticket) => (
+                                <div key={ticket.tokenId} className="table-row">
                                     <div className="td token-id">
-                                        <strong>{ticket.id}</strong>
+                                        <strong>{ticket.tokenId}</strong>
                                     </div>
                                     <div className="td issue-desc">
-                                        <div className="issue-title">{ticket.description}</div>
+                                        <div className="issue-title">{ticket.title}</div>
                                         <div className="issue-location">{ticket.location}</div>
                                     </div>
                                     <div className="td assignee">
-                                        <span className="team-badge">{ticket.assignee}</span>
+                                        <span className="team-badge">Team A</span>
                                     </div>
                                     <div className="td status">
                                         <span className={`status-badge ${ticket.status.toLowerCase().replace(' ', '-')}`}>
@@ -293,11 +263,15 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                                                 setUploadModalOpen(true);
                                             }}
                                         >
-                                            Upload
+                                            Resolve
                                         </button>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="no-tickets" style={{ padding: '2rem', textAlign: 'center', color: '#6B7280' }}>
+                                    No tickets assigned to {departmentName} yet.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -533,110 +507,93 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                             <Search size={18} />
                             <input
                                 type="text"
-                                placeholder="e.g. WA-14-882"
+                                placeholder="Search Token ID..."
                                 value={tokenSearchId}
                                 onChange={(e) => setTokenSearchId(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleTokenSearch()}
                             />
-                            <button className="check-btn dept">Search</button>
+                            <button className="check-btn dept" onClick={handleTokenSearch}>Search</button>
                         </div>
                     </div>
 
-                    {tokenSearchId && (
-                        <div className="token-details-card dept">
-                            <div className="token-status-badge processing">IN PROGRESS</div>
-                            <h4>#WA-14-882</h4>
-                            <p>Water pipeline leak reported at Beach Road Junction. Team A assigned for repair work.</p>
-
-                            <div className="assign-section">
-                                <label>UPDATE STATUS</label>
-                                <select className="department-select dept">
-                                    <option>In Progress</option>
-                                    <option>Completed - Upload Photo</option>
-                                    <option>On Hold</option>
-                                    <option>Requires Approval</option>
-                                </select>
-                                <button className="update-assignment-btn dept">UPDATE STATUS</button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="action-buttons dept">
-                        <button className="action-btn new-task dept">
-                            <CheckCircle2 size={20} />
-                            Mark Complete
-                        </button>
-                        <button className="action-btn broadcast dept">
-                            <Bell size={20} />
-                            Request Support
-                        </button>
-                    </div>
                 </div>
 
-                {/* Department Tasks List */}
-                <div className="department-tasks-list dept">
-                    <div className="list-header">
-                        <h3>Active Tasks</h3>
-                        <select className="filter-select dept">
-                            <option>All Wards</option>
-                            <option>Ward 14</option>
-                            <option>Ward 12</option>
-                            <option>Ward 8</option>
-                            <option>Ward 5</option>
-                        </select>
-                    </div>
+                <div className="action-buttons dept">
+                    <button className="action-btn new-task dept">
+                        <CheckCircle2 size={20} />
+                        Mark Complete
+                    </button>
+                    <button className="action-btn broadcast dept">
+                        <Bell size={20} />
+                        Request Support
+                    </button>
+                </div>
+            </div>
 
-                    <div className="tasks-table dept">
-                        <div className="tasks-table-header">
-                            <div>TASK / TOKEN</div>
-                            <div>WARD</div>
-                            <div>TEAM</div>
-                            <div>STATUS</div>
-                            <div>ACTION</div>
-                        </div>
-                        <div className="tasks-table-body">
-                            {tickets.map((task, index) => (
-                                <div key={index} className="task-row dept">
-                                    <div className="task-issue">
-                                        <div className="priority-dot high"></div>
-                                        <div>
-                                            <div className="issue-name">{task.description}</div>
-                                            <div className="issue-token">{task.id}</div>
-                                            <div className="issue-time">• {task.date}</div>
-                                        </div>
-                                    </div>
-                                    <div className="task-dept">
-                                        <span className="dept-badge">{task.location.split(',')[1] || 'Ward 14'}</span>
-                                    </div>
-                                    <div className="task-assignee">
-                                        <div className="assignee-avatar dept">{task.assignee[0]}</div>
-                                        <span>{task.assignee}</span>
-                                    </div>
-                                    <div className="task-status">
-                                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
-                                            {task.status}
-                                        </span>
-                                    </div>
-                                    <div className="task-action">
-                                        <button
-                                            className="upload-btn dept"
-                                            onClick={() => {
-                                                setSelectedTicket({ id: task.id, description: task.description });
-                                                setUploadModalOpen(true);
-                                            }}
-                                        >
-                                            <Upload size={16} />
-                                        </button>
+            {/* Department Tasks List */}
+            <div className="department-tasks-list dept">
+                <div className="list-header">
+                    <h3>Active Tasks</h3>
+                    <select className="filter-select dept">
+                        <option>All Wards</option>
+                        <option>Ward 14</option>
+                        <option>Ward 12</option>
+                        <option>Ward 8</option>
+                        <option>Ward 5</option>
+                    </select>
+                </div>
+
+                <div className="tasks-table dept">
+                    <div className="tasks-table-header">
+                        <div>TASK / TOKEN</div>
+                        <div>WARD</div>
+                        <div>TEAM</div>
+                        <div>STATUS</div>
+                        <div>ACTION</div>
+                    </div>
+                    <div className="tasks-table-body">
+                        {tickets.map((task, index) => (
+                            <div key={index} className="task-row dept">
+                                <div className="task-issue">
+                                    <div className={`priority-dot ${task.urgency === 'High' ? 'high' : 'medium'}`}></div>
+                                    <div>
+                                        <div className="issue-name">{task.title}</div>
+                                        <div className="issue-token">{task.tokenId}</div>
+                                        <div className="issue-time">• {new Date(task.createdAt).toLocaleDateString()}</div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="task-dept">
+                                    <span className="dept-badge">{task.ward}</span>
+                                </div>
+                                <div className="task-assignee">
+                                    <div className="assignee-avatar dept">T</div>
+                                    <span>Team A</span>
+                                </div>
+                                <div className="task-status">
+                                    <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
+                                        {task.status}
+                                    </span>
+                                </div>
+                                <div className="task-action">
+                                    <button
+                                        className="upload-btn dept"
+                                        onClick={() => {
+                                            setSelectedTicket(task);
+                                            setUploadModalOpen(true);
+                                        }}
+                                    >
+                                        <Upload size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <div className="table-footer">
-                        Showing 5 of {stats.ticketsAssigned} total tasks
-                        <div className="pagination">
-                            <button>Prev</button>
-                            <button>Next</button>
-                        </div>
+                </div>
+                <div className="table-footer">
+                    Showing 5 of {stats.ticketsAssigned} total tasks
+                    <div className="pagination">
+                        <button>Prev</button>
+                        <button>Next</button>
                     </div>
                 </div>
             </div>
@@ -724,8 +681,9 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                         <div className="modal-body">
                             {selectedTicket && (
                                 <div className="ticket-info">
-                                    <strong>{selectedTicket.id}</strong>
-                                    <p>{selectedTicket.description}</p>
+                                    <strong>{selectedTicket.tokenId}</strong>
+                                    <p>{selectedTicket.title}</p>
+                                    <p style={{ fontSize: '0.875rem', color: '#666' }}>{selectedTicket.description}</p>
                                 </div>
                             )}
 
@@ -785,6 +743,70 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                             >
                                 Submit Solution
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Token Details Modal */}
+            {showTokenDetailsModal && searchedTokenIssue && (
+                <div className="modal-overlay" onClick={() => setShowTokenDetailsModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                        <div className="modal-header">
+                            <h2>Issue Details</h2>
+                            <button className="close-btn" onClick={() => setShowTokenDetailsModal(false)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '2rem' }}>
+                            <div className="searched-issue-details">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <span className={`status-badge ${searchedTokenIssue.status.toLowerCase()}`}>{searchedTokenIssue.status}</span>
+                                    <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>{new Date(searchedTokenIssue.createdAt).toLocaleString()}</span>
+                                </div>
+
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{searchedTokenIssue.title}</h3>
+                                <p style={{ color: '#6B7280', marginBottom: '1.5rem' }}>Token ID: <strong style={{ color: '#111827' }}>{searchedTokenIssue.tokenId}</strong></p>
+
+                                {searchedTokenIssue.imageUrl && (
+                                    <div style={{ marginBottom: '1.5rem', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <img src={searchedTokenIssue.imageUrl} alt="Issue" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Location</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.location || searchedTokenIssue.placeName}</div>
+                                        <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>{searchedTokenIssue.ward}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Department</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.department}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Category</div>
+                                        <div style={{ fontWeight: '500' }}>{searchedTokenIssue.category || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Urgency</div>
+                                        <div style={{ fontWeight: '500', color: searchedTokenIssue.urgency === 'High' ? '#EF4444' : '#10B981' }}>{searchedTokenIssue.urgency}</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', marginBottom: '0.25rem' }}>Description</div>
+                                    <p style={{ lineHeight: '1.5', color: '#374151' }}>{searchedTokenIssue.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-footer" style={{ borderTop: '1px solid #E5E7EB', padding: '1rem 2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button className="btn-cancel" onClick={() => setShowTokenDetailsModal(false)}>Close</button>
+                            <button className="btn-submit" onClick={() => {
+                                setShowTokenDetailsModal(false);
+                                setSelectedTicket(searchedTokenIssue);
+                                setUploadModalOpen(true);
+                            }}>Take Action</button>
                         </div>
                     </div>
                 </div>

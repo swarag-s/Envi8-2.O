@@ -84,6 +84,11 @@ export const IssueProvider = ({ children }) => {
         return issues.filter(issue => issue.status === status);
     };
 
+    // Get issue by token ID
+    const getIssueByToken = (tokenId) => {
+        return issues.find(issue => issue.tokenId === tokenId);
+    };
+
     // Ward Places Management
     const addWardPlace = (wardNumber, place) => {
         setWardPlaces(prev => {
@@ -138,7 +143,8 @@ export const IssueProvider = ({ children }) => {
         addWardPlace,
         updateWardPlace,
         deleteWardPlace,
-        getWardPlaces
+        getWardPlaces,
+        getIssueByToken
     };
 
     return (

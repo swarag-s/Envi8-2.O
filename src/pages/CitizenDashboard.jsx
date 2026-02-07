@@ -20,7 +20,8 @@ import {
     Check,
     StopCircle,
     Navigation,
-    Megaphone
+    Megaphone,
+    Sparkles
 } from 'lucide-react';
 import { useIssues } from '../context/IssueContext';
 import { analyzeIssueImage, detectWardFromPlace } from '../services/geminiService';
@@ -31,6 +32,8 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
     const [activeSection, setActiveSection] = useState('dashboard');
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportStep, setReportStep] = useState(1);
+    const [reportMode, setReportMode] = useState('manual'); // 'manual' or 'ai'
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
     const [uploadPreview, setUploadPreview] = useState(null);
     const [uploadType, setUploadType] = useState(null);
@@ -234,36 +237,65 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
         }
     };
 
+    const handleModeChange = async (mode) => {
+        setReportMode(mode);
+
+        // If switching to AI mode and an image is already uploaded
+        if (mode === 'ai' && uploadedFile && uploadedFile.type.startsWith('image')) {
+            setIsAnalyzing(true);
+            try {
+                const analysis = await analyzeIssueImage(uploadedFile);
+                setReportData(prev => ({
+                    ...prev,
+                    category: analysis.category,
+                    description: analysis.description,
+                    urgency: analysis.urgency,
+                    detectedDepartment: analysis.department,
+                    detectedCategory: analysis.category
+                }));
+            } catch (error) {
+                console.error("AI Analysis failed:", error);
+            } finally {
+                setIsAnalyzing(false);
+            }
+        }
+    };
+
     // Handle file upload
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
         if (file) {
-            setUploadedFile(file);
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 setUploadPreview(reader.result);
                 setUploadType(file.type.startsWith('video') ? 'video' : 'image');
+
+                // If AI mode is active, analyze the image
+                if (reportMode === 'ai' && file.type.startsWith('image')) {
+                    setIsAnalyzing(true);
+                    try {
+                        const analysis = await analyzeIssueImage(file);
+
+                        // Auto-fill form with AI results
+                        setReportData(prev => ({
+                            ...prev,
+                            category: analysis.category,
+                            description: analysis.description,
+                            urgency: analysis.urgency,
+                            detectedDepartment: analysis.department,
+                            detectedCategory: analysis.category
+                        }));
+
+                    } catch (error) {
+                        console.error('AI Analysis failed:', error);
+                        // Fallback or error message could be added here
+                    } finally {
+                        setIsAnalyzing(false);
+                    }
+                }
             };
             reader.readAsDataURL(file);
-
-            // AI ANALYSIS for Images
-            if (file.type.startsWith('image')) {
-                setIsAnalyzingImage(true);
-                try {
-                    const analysis = await analyzeIssueImage(file);
-                    setReportData(prev => ({
-                        ...prev,
-                        category: analysis.category || prev.category,
-                        description: analysis.description || prev.description,
-                        urgency: analysis.urgency || prev.urgency,
-                        detectedDepartment: analysis.department || prev.detectedDepartment
-                    }));
-                } catch (error) {
-                    console.error('AI Analysis failed:', error);
-                } finally {
-                    setIsAnalyzingImage(false);
-                }
-            }
+            setUploadedFile(file);
         }
     };
 
@@ -631,8 +663,60 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                             {reportStep === 1 && (
                                 <div className="report-step-content">
                                     <div className="upload-section">
-                                        <h3>Evidence Upload</h3>
-                                        <p className="upload-subtitle">Upload photos or video of the issue. AI will auto-detect the problem category.</p>
+                                        <h3>EVIDENCE UPLOAD</h3>
+
+                                        {/* Reporting Mode Toggle */}
+                                        <div className="mode-toggle" style={{
+                                            display: 'flex',
+                                            background: '#F3F4F6',
+                                            padding: '4px',
+                                            borderRadius: '8px',
+                                            marginBottom: '1rem',
+                                            width: 'fit-content'
+                                        }}>
+                                            <button
+                                                onClick={() => handleModeChange('manual')}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    background: reportMode === 'manual' ? 'white' : 'transparent',
+                                                    color: reportMode === 'manual' ? '#111827' : '#6B7280',
+                                                    fontWeight: reportMode === 'manual' ? '600' : '500',
+                                                    boxShadow: reportMode === 'manual' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                Manual Entry
+                                            </button>
+                                            <button
+                                                onClick={() => handleModeChange('ai')}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    background: reportMode === 'ai' ? '#10B981' : 'transparent',
+                                                    color: reportMode === 'ai' ? 'white' : '#6B7280',
+                                                    fontWeight: reportMode === 'ai' ? '600' : '500',
+                                                    boxShadow: reportMode === 'ai' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                <Sparkles size={16} />
+                                                AI Detection
+                                            </button>
+                                        </div>
+
+                                        <p className="upload-subtitle">
+                                            {reportMode === 'ai'
+                                                ? "Upload a photo and our AI will automatically detect the issue, category, and urgency."
+                                                : "Upload photos or video of the issue."}
+                                        </p>
 
                                         {!uploadPreview && !isRecordingVideo ? (
                                             <div className="upload-area large">
@@ -681,14 +765,54 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                                                 {uploadType === 'video' ? (
                                                     <video src={uploadPreview} controls className="preview-video" />
                                                 ) : (
-                                                    <img src={uploadPreview} alt="Upload preview" />
+                                                    <div style={{ position: 'relative' }}>
+                                                        <img src={uploadPreview} alt="Upload preview" />
+                                                        {isAnalyzing && (
+                                                            <div className="ai-overlay" style={{
+                                                                position: 'absolute',
+                                                                top: 0,
+                                                                left: 0,
+                                                                right: 0,
+                                                                bottom: 0,
+                                                                background: 'rgba(0,0,0,0.5)',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                color: 'white',
+                                                                gap: '10px'
+                                                            }}>
+                                                                <div className="ai-spinner" style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    border: '3px solid white',
+                                                                    borderTopColor: 'transparent',
+                                                                    borderRadius: '50%',
+                                                                    animation: 'spin 1s linear infinite'
+                                                                }}></div>
+                                                                <span>Analyzing Image...</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                                 <button
                                                     className="remove-upload"
+                                                    disabled={isAnalyzing}
                                                     onClick={() => {
                                                         setUploadedFile(null);
                                                         setUploadPreview(null);
                                                         setUploadType(null);
+                                                        // Reset AI filled data if removing image in AI mode
+                                                        if (reportMode === 'ai') {
+                                                            setReportData(prev => ({
+                                                                ...prev,
+                                                                category: '',
+                                                                description: '',
+                                                                urgency: 'Normal',
+                                                                detectedDepartment: '',
+                                                                detectedCategory: ''
+                                                            }));
+                                                        }
                                                     }}
                                                 >
                                                     <X size={16} />
@@ -742,10 +866,18 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                                                     <option key={index} value={place.name} />
                                                 ))}
                                             </datalist>
+
                                             {reportData.ward && (
                                                 <p className="detected-ward-info" style={{ color: '#10B981', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                                                    <Check size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                                                    <Check size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
                                                     Detected: {reportData.ward}
+                                                </p>
+                                            )}
+
+                                            {reportData.detectedDepartment && (
+                                                <p className="detected-ward-info" style={{ color: '#10B981', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                                                    <Sparkles size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                                    Detected Department: {reportData.detectedDepartment}
                                                 </p>
                                             )}
                                         </div>
