@@ -8,7 +8,7 @@ import {
     Twitter,
     Instagram,
     Linkedin,
-    FileText
+    Megaphone
 } from 'lucide-react';
 import './Footer.css';
 
@@ -89,8 +89,8 @@ const Footer = () => {
                         {/* Brand Column */}
                         <div className="footer-brand">
                             <div className="footer-logo">
-                                <FileText size={32} strokeWidth={2.5} />
-                                <span className="footer-logo-text">CivicReport</span>
+                                <Megaphone size={32} strokeWidth={2.5} />
+                                <span className="footer-logo-text">JannaShabdha</span>
                             </div>
                             <p className="footer-brand-description">
                                 Empowering citizens with AI-driven civic reporting for a better
@@ -175,7 +175,7 @@ const Footer = () => {
                 <div className="container">
                     <div className="footer-bottom-content">
                         <p className="footer-copyright">
-                            © {currentYear} CivicReport. All rights reserved.
+                            © {currentYear} JannaShabdha. All rights reserved.
                         </p>
                         <div className="footer-social">
                             {socialLinks.map((social, index) => (

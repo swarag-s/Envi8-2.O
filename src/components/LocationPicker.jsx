@@ -1,229 +1,203 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import { MapPin, Navigation, X, Check } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { MapPin, Navigation, RefreshCw, Check } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import './LocationPicker.css';
 
-// Fix for default marker icon in React-Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// Fix for Leaflet marker icons in React
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
 });
 
-// Component to handle map clicks
-function LocationMarker({ position, setPosition }) {
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Sub-component to handle map clicks and updates
+function LocationMarker({ position, setPosition, onLocationSelect }) {
+    const map = useMap();
+
+    // Update map view when position changes externally
+    useEffect(() => {
+        if (position) {
+            map.setView(position, map.getZoom());
+        }
+    }, [position, map]);
+
     useMapEvents({
         click(e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
+            const newPos = { lat: e.latlng.lat, lng: e.latlng.lng };
+            setPosition(newPos);
+            onLocationSelect(newPos);
         },
     });
 
-    return position ? <Marker position={position} /> : null;
+    return position === null ? null : (
+        <Marker
+            position={position}
+            draggable={true}
+            eventHandlers={{
+                dragend: (e) => {
+                    const marker = e.target;
+                    const newPos = marker.getLatLng();
+                    setPosition(newPos);
+                    onLocationSelect(newPos);
+                }
+            }}
+        />
+    );
 }
 
-const LocationPicker = ({ onLocationSelect, initialLocation, onClose }) => {
+const LocationPicker = ({ onLocationChange, initialLocation }) => {
     const [mode, setMode] = useState('auto'); // 'auto' or 'manual'
-    const [position, setPosition] = useState(initialLocation || [11.2588, 75.7804]); // Default: Kozhikode
+    const [position, setPosition] = useState(initialLocation || { lat: 11.2588, lng: 75.7804 }); // Default Kozhikode
     const [address, setAddress] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const mapRef = useRef(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Auto-detect location
-    const handleAutoDetect = () => {
-        setIsLoading(true);
-        setError('');
+    // Initial GPS fetch
+    useEffect(() => {
+        if (mode === 'auto' && !initialLocation) {
+            getCurrentLocation();
+        }
+    }, [mode]);
+
+    const getCurrentLocation = () => {
+        setLoading(true);
+        setError(null);
 
         if (!navigator.geolocation) {
             setError('Geolocation is not supported by your browser');
-            setIsLoading(false);
+            setLoading(false);
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                setPosition([lat, lon]);
-
-                // Reverse geocode to get address
-                try {
-                    const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-                    );
-                    const data = await response.json();
-                    setAddress(data.display_name || `${lat.toFixed(6)}, ${lon.toFixed(6)}`);
-                } catch (err) {
-                    setAddress(`${lat.toFixed(6)}, ${lon.toFixed(6)}`);
-                }
-
-                setIsLoading(false);
+            (pos) => {
+                const newPos = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude
+                };
+                setPosition(newPos);
+                fetchAddress(newPos.lat, newPos.lng);
+                onLocationChange({ ...newPos, address: 'Fetching address...' });
             },
             (err) => {
-                setError('Unable to retrieve your location. Please use manual selection.');
-                setIsLoading(false);
+                setError('Unable to retrieve your location');
+                setLoading(false);
+                // Fallback to manual mode if auto fails
                 setMode('manual');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
             }
         );
     };
 
-    // Get address when position changes in manual mode
-    useEffect(() => {
-        if (mode === 'manual' && position) {
-            const getAddress = async () => {
-                try {
-                    const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position[0]}&lon=${position[1]}`
-                    );
-                    const data = await response.json();
-                    setAddress(data.display_name || `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`);
-                } catch (err) {
-                    setAddress(`${position[0].toFixed(6)}, ${position[1].toFixed(6)}`);
-                }
-            };
-            getAddress();
-        }
-    }, [position, mode]);
-
-    // Auto-detect on mount if mode is auto
-    useEffect(() => {
-        if (mode === 'auto') {
-            handleAutoDetect();
-        }
-    }, [mode]);
-
-    const handleConfirm = () => {
-        if (position) {
-            onLocationSelect({
-                latitude: position[0],
-                longitude: position[1],
-                address: address,
-                mode: mode
-            });
+    const fetchAddress = async (lat, lng) => {
+        setLoading(true);
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+            );
+            const data = await response.json();
+            const newAddress = data.display_name;
+            setAddress(newAddress);
+            onLocationChange({ lat, lng, address: newAddress });
+        } catch (error) {
+            console.error('Error fetching address:', error);
+            setAddress('Address lookup failed');
+            onLocationChange({ lat, lng, address: 'Unknown location' });
+        } finally {
+            setLoading(false);
         }
     };
 
+    const handleManualSelect = (newPos) => {
+        setPosition(newPos);
+        fetchAddress(newPos.lat, newPos.lng);
+    };
+
     return (
-        <div className="location-picker-overlay">
-            <div className="location-picker-modal">
-                <div className="location-picker-header">
-                    <h2>Select Location</h2>
-                    <button className="close-btn" onClick={onClose}>
-                        <X size={24} />
-                    </button>
-                </div>
+        <div className="location-picker">
+            <div className="picker-tabs">
+                <button
+                    className={`tab ${mode === 'auto' ? 'active' : ''}`}
+                    onClick={() => setMode('auto')}
+                >
+                    <Navigation size={16} />
+                    Auto Detect
+                </button>
+                <button
+                    className={`tab ${mode === 'manual' ? 'active' : ''}`}
+                    onClick={() => setMode('manual')}
+                >
+                    <MapPin size={16} />
+                    Select on Map
+                </button>
+            </div>
 
-                {/* Mode Selection */}
-                <div className="location-mode-tabs">
-                    <button
-                        className={`mode-tab ${mode === 'auto' ? 'active' : ''}`}
-                        onClick={() => setMode('auto')}
-                    >
-                        <Navigation size={18} />
-                        Auto-Detect
-                    </button>
-                    <button
-                        className={`mode-tab ${mode === 'manual' ? 'active' : ''}`}
-                        onClick={() => setMode('manual')}
-                    >
-                        <MapPin size={18} />
-                        Manual Selection
-                    </button>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="location-error">
-                        <span>⚠️ {error}</span>
-                    </div>
-                )}
-
-                {/* Auto Mode */}
-                {mode === 'auto' && (
-                    <div className="auto-mode-content">
-                        {isLoading ? (
-                            <div className="location-loading">
-                                <div className="spinner-large"></div>
-                                <p>Detecting your location...</p>
-                                <p className="help-text">Please allow location access when prompted</p>
+            <div className="picker-content">
+                {mode === 'auto' ? (
+                    <div className="auto-mode">
+                        {loading ? (
+                            <div className="loading-state">
+                                <div className="spinner"></div>
+                                <p>Detecting accurate location...</p>
                             </div>
-                        ) : position ? (
-                            <div className="location-detected">
-                                <div className="location-icon-success">
-                                    <Check size={48} />
+                        ) : error ? (
+                            <div className="error-state">
+                                <p>{error}</p>
+                                <button onClick={getCurrentLocation} className="retry-btn">Retry</button>
+                                <button onClick={() => setMode('manual')} className="switch-btn">Switch to Manual</button>
+                            </div>
+                        ) : (
+                            <div className="location-details">
+                                <div className="info-row">
+                                    <label>Latitude:</label>
+                                    <span>{position.lat.toFixed(6)}</span>
                                 </div>
-                                <h3>Location Detected!</h3>
-                                <div className="location-details">
-                                    <p className="location-address">{address}</p>
-                                    <p className="location-coords">
-                                        📍 {position[0].toFixed(6)}, {position[1].toFixed(6)}
-                                    </p>
+                                <div className="info-row">
+                                    <label>Longitude:</label>
+                                    <span>{position.lng.toFixed(6)}</span>
                                 </div>
-                                <button className="btn-retry" onClick={handleAutoDetect}>
-                                    <Navigation size={18} />
-                                    Detect Again
+                                <div className="info-row address">
+                                    <label>Address:</label>
+                                    <p>{address || 'Fetching address...'}</p>
+                                </div>
+                                <button onClick={getCurrentLocation} className="refresh-btn">
+                                    <RefreshCw size={14} /> Refresh Location
                                 </button>
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-
-                {/* Manual Mode */}
-                {mode === 'manual' && (
-                    <div className="manual-mode-content">
-                        <div className="map-instructions">
-                            <MapPin size={16} />
-                            <span>Click anywhere on the map to select your exact location</span>
-                        </div>
-
-                        <div className="map-container">
-                            <MapContainer
-                                center={position}
-                                zoom={13}
-                                style={{ height: '400px', width: '100%', borderRadius: '8px' }}
-                                ref={mapRef}
-                            >
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                <LocationMarker position={position} setPosition={setPosition} />
-                            </MapContainer>
-                        </div>
-
-                        {address && (
-                            <div className="selected-location-info">
-                                <p className="location-label">Selected Location:</p>
-                                <p className="location-address">{address}</p>
-                                <p className="location-coords">
-                                    📍 Lat: {position[0].toFixed(6)}, Lon: {position[1].toFixed(6)}
-                                </p>
                             </div>
                         )}
                     </div>
+                ) : (
+                    <div className="manual-mode">
+                        <MapContainer
+                            center={position}
+                            zoom={15}
+                            style={{ height: '300px', width: '100%', borderRadius: '8px' }}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; OpenStreetMap contributors'
+                            />
+                            <LocationMarker
+                                position={position}
+                                setPosition={setPosition}
+                                onLocationSelect={handleManualSelect}
+                            />
+                        </MapContainer>
+                        <div className="manual-helper">
+                            <p>Drag marker or click map to pinpoint location</p>
+                            <div className="current-selection">
+                                <span>{address ? address.substring(0, 40) + '...' : 'Select location...'}</span>
+                            </div>
+                        </div>
+                    </div>
                 )}
-
-                {/* Footer Actions */}
-                <div className="location-picker-footer">
-                    <button className="btn-secondary" onClick={onClose}>
-                        Cancel
-                    </button>
-                    <button
-                        className="btn-primary"
-                        onClick={handleConfirm}
-                        disabled={!position || isLoading}
-                    >
-                        <Check size={18} />
-                        Confirm Location
-                    </button>
-                </div>
             </div>
         </div>
     );

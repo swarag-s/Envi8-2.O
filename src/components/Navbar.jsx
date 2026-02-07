@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, FileText, LogIn, UserPlus } from 'lucide-react';
+import { Menu, X, Megaphone, LogIn, UserPlus } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = ({ onLoginClick }) => {
@@ -29,8 +29,8 @@ const Navbar = ({ onLoginClick }) => {
         <div className="navbar-content">
           {/* Logo */}
           <div className="navbar-logo">
-            <FileText className="logo-icon" size={32} strokeWidth={2.5} />
-            <span className="logo-text">CivicReport</span>
+            <Megaphone className="logo-icon" size={32} strokeWidth={2.5} />
+            <span className="logo-text">JannaShabdha</span>
           </div>
 
           {/* Desktop Navigation */}

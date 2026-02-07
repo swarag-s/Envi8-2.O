@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, FileText, Shield } from 'lucide-react';
+import { ArrowLeft, FileText, Shield, Megaphone } from 'lucide-react';
 import CitizenLogin from '../components/auth/CitizenLogin';
 import CitizenRegister from '../components/auth/CitizenRegister';
 import AuthorityLogin from '../components/auth/AuthorityLogin';
@@ -62,9 +62,9 @@ const Auth = ({ onBack, onCitizenLogin, onWardMemberLogin, onDepartmentLogin }) 
                 <div className="auth-branding">
                     <div className="auth-logo">
                         <div className="logo-icon">
-                            <FileText size={32} />
+                            <Megaphone size={32} />
                         </div>
-                        <h1>CivicReport</h1>
+                        <h1>JannaShabdha</h1>
                     </div>
 
                     <div className="auth-description">

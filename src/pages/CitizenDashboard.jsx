@@ -19,10 +19,12 @@ import {
     Copy,
     Check,
     StopCircle,
-    Navigation
+    Navigation,
+    Megaphone
 } from 'lucide-react';
+import { useIssues } from '../context/IssueContext';
+import { analyzeIssueImage, detectWardFromPlace } from '../services/geminiService';
 import LocationPicker from '../components/LocationPicker';
-import '../components/LocationPicker.css';
 import './CitizenDashboard.css';
 
 const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' }) => {
@@ -36,13 +38,35 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
     const [generatedTokenId, setGeneratedTokenId] = useState('');
     const [copiedToken, setCopiedToken] = useState(false);
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-    const [showLocationPicker, setShowLocationPicker] = useState(false);
 
     // Video recording
     const [isRecordingVideo, setIsRecordingVideo] = useState(false);
     const [videoStream, setVideoStream] = useState(null);
     const videoRef = useRef(null);
     const videoRecorderRef = useRef(null);
+
+    // Context & AI State
+    const { addIssue, wardPlaces } = useIssues();
+    const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+    const [isDetectingWard, setIsDetectingWard] = useState(false);
+    const [placeName, setPlaceName] = useState('');
+    const [availablePlaces, setAvailablePlaces] = useState([]);
+
+    // Load available places for autocomplete
+    useEffect(() => {
+        const allPlaces = [];
+        if (wardPlaces) {
+            Object.entries(wardPlaces).forEach(([wardNum, places]) => {
+                places.forEach(place => {
+                    allPlaces.push({
+                        ...place,
+                        ward: `Ward ${wardNum}`
+                    });
+                });
+            });
+            setAvailablePlaces(allPlaces);
+        }
+    }, [wardPlaces]);
 
     const [reportData, setReportData] = useState({
         location: '',
@@ -164,17 +188,6 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
         );
     };
 
-    // Handle location selection from LocationPicker
-    const handleLocationSelect = (locationData) => {
-        setReportData({
-            ...reportData,
-            location: locationData.address,
-            latitude: locationData.latitude,
-            longitude: locationData.longitude
-        });
-        setShowLocationPicker(false);
-    };
-
     // Video recording functions
     const startVideoRecording = async () => {
         try {
@@ -222,7 +235,7 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
     };
 
     // Handle file upload
-    const handleFileUpload = (e) => {
+    const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
             setUploadedFile(file);
@@ -232,63 +245,107 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                 setUploadType(file.type.startsWith('video') ? 'video' : 'image');
             };
             reader.readAsDataURL(file);
+
+            // AI ANALYSIS for Images
+            if (file.type.startsWith('image')) {
+                setIsAnalyzingImage(true);
+                try {
+                    const analysis = await analyzeIssueImage(file);
+                    setReportData(prev => ({
+                        ...prev,
+                        category: analysis.category || prev.category,
+                        description: analysis.description || prev.description,
+                        urgency: analysis.urgency || prev.urgency,
+                        detectedDepartment: analysis.department || prev.detectedDepartment
+                    }));
+                } catch (error) {
+                    console.error('AI Analysis failed:', error);
+                } finally {
+                    setIsAnalyzingImage(false);
+                }
+            }
         }
     };
 
-    // Simulate Gemini AI department detection
-    const detectDepartmentWithAI = async (file, description) => {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+    const handleLocationSelect = (locationInfo) => {
+        setReportData(prev => ({
+            ...prev,
+            latitude: locationInfo.lat,
+            longitude: locationInfo.lng,
+            location: locationInfo.address
+        }));
 
-        const text = description.toLowerCase();
-        let department = 'General';
-        let category = 'Other';
-
-        if (text.includes('light') || text.includes('electricity') || text.includes('power')) {
-            department = 'KSEB (Electricity)';
-            category = 'Electricity';
-        } else if (text.includes('water') || text.includes('pipe') || text.includes('leak')) {
-            department = 'Water Authority';
-            category = 'Water Supply';
-        } else if (text.includes('road') || text.includes('pothole') || text.includes('bridge')) {
-            department = 'PWD (Roads & Infrastructure)';
-            category = 'Roads';
-        } else if (text.includes('waste') || text.includes('garbage') || text.includes('drain')) {
-            department = 'Sanitation Department';
-            category = 'Sanitation';
+        // If address is specific, we could use it for place name too
+        if (locationInfo.address && !placeName) {
+            const firstPart = locationInfo.address.split(',')[0];
+            setPlaceName(firstPart);
+            handlePlaceNameChange(firstPart);
         }
+    };
 
-        return { department, category };
+    const handlePlaceNameChange = async (value) => {
+        setPlaceName(value);
+        if (value.length > 3) {
+            setIsDetectingWard(true);
+            try {
+                const detection = await detectWardFromPlace(value, wardPlaces);
+                if (detection.wardNumber) {
+                    setReportData(prev => ({
+                        ...prev,
+                        ward: `Ward ${detection.wardNumber}`,
+                        matchedPlace: detection.matchedPlace
+                    }));
+                }
+            } catch (error) {
+                console.error('Ward detection failed:', error);
+            } finally {
+                setIsDetectingWard(false);
+            }
+        }
     };
 
     // Handle report submission
     const handleSubmitReport = async () => {
-        const { department, category } = await detectDepartmentWithAI(
-            uploadedFile,
-            reportData.description
-        );
-
-        setReportData({
-            ...reportData,
-            detectedDepartment: department,
-            detectedCategory: category
-        });
-
-        // Generate unique token ID
+        // Generate Token
         const timestamp = Date.now();
         const random = Math.floor(Math.random() * 1000);
         const tokenId = `TK-${ward.replace('Ward ', '')}-${timestamp.toString().slice(-6)}-${random.toString().padStart(3, '0')}`;
-        setGeneratedTokenId(tokenId);
 
-        // Close report modal and show success modal
+        const newIssue = {
+            tokenId,
+            title: `${reportData.category || 'Civic'} Issue`,
+            description: reportData.description,
+            category: reportData.category,
+            urgency: reportData.urgency,
+            location: reportData.location,
+            latitude: reportData.latitude,
+            longitude: reportData.longitude,
+            landmark: reportData.landmark,
+            placeName: placeName,
+            ward: ward,
+            status: 'Pending',
+            department: reportData.detectedDepartment || 'Pending Assignment',
+            userName: userName,
+            imageUrl: uploadPreview,
+            imageType: uploadType,
+            createdAt: new Date().toISOString()
+        };
+
+        // Add to shared context
+        addIssue(newIssue);
+
+        setGeneratedTokenId(tokenId);
+        setCopiedToken(false);
         setShowReportModal(false);
         setShowSuccessModal(true);
 
-        // Reset form after 5 seconds
+        // Reset form
         setTimeout(() => {
             setReportStep(1);
             setUploadedFile(null);
             setUploadPreview(null);
             setUploadType(null);
+            setPlaceName('');
             setReportData({
                 location: '',
                 latitude: null,
@@ -300,8 +357,9 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                 detectedDepartment: '',
                 detectedCategory: ''
             });
-        }, 5000);
+        }, 500);
     };
+
 
     // Copy token ID to clipboard
     const copyTokenId = () => {
@@ -310,12 +368,7 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
         setTimeout(() => setCopiedToken(false), 2000);
     };
 
-    // Auto-get location when modal opens
-    useEffect(() => {
-        if (showReportModal && !reportData.location) {
-            getCurrentLocation();
-        }
-    }, [showReportModal]);
+
 
     const renderDashboard = () => (
         <div className="citizen-dashboard-content">
@@ -493,11 +546,11 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                 <div className="sidebar-header">
                     <div className="logo">
                         <div className="logo-icon citizen">
-                            <Home size={24} />
+                            <Megaphone size={24} />
                         </div>
                         <div className="logo-text">
-                            <div className="logo-title">CivicAI</div>
-                            <div className="logo-subtitle">CITIZEN PORTAL</div>
+                            <div className="logo-title" style={{ color: '#F9FAFB' }}>JannaShabdha</div>
+                            <div className="logo-subtitle" style={{ color: '#F9FAFB' }}>CITIZEN PORTAL</div>
                         </div>
                     </div>
                 </div>
@@ -651,41 +704,51 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
 
                                     <div className="details-section">
                                         <h3>Exact Location</h3>
+                                        <div className="location-picker-container" style={{ marginBottom: '1.5rem' }}>
+                                            <LocationPicker
+                                                onLocationChange={handleLocationSelect}
+                                                initialLocation={reportData.latitude ? { lat: reportData.latitude, lng: reportData.longitude } : null}
+                                            />
+                                        </div>
 
-                                        {reportData.location ? (
-                                            <div className="location-selected">
-                                                <div className="location-map">
-                                                    <MapPin size={20} className="map-icon" />
-                                                    <div className="location-info">
-                                                        <span className="location-address">{reportData.location}</span>
-                                                        {reportData.latitude && reportData.longitude && (
-                                                            <span className="location-coords">
-                                                                📍 {reportData.latitude.toFixed(6)}, {reportData.longitude.toFixed(6)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    className="change-location-btn"
-                                                    onClick={() => setShowLocationPicker(true)}
-                                                >
-                                                    <MapPin size={14} />
-                                                    Change
-                                                </button>
+                                        <div className="form-group">
+                                            <label>Place Name (for Ward Detection)</label>
+                                            <div className="place-input-wrapper" style={{ position: 'relative' }}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter place name (e.g., Mananchira Square)"
+                                                    value={placeName}
+                                                    onChange={(e) => handlePlaceNameChange(e.target.value)}
+                                                    className="input-field"
+                                                    list="place-suggestions"
+                                                />
+                                                {isDetectingWard && (
+                                                    <div className="ai-spinner-small" style={{
+                                                        position: 'absolute',
+                                                        right: '10px',
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)',
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        border: '2px solid #E5E7EB',
+                                                        borderTopColor: '#10B981',
+                                                        borderRadius: '50%',
+                                                        animation: 'spin 1s linear infinite'
+                                                    }}></div>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <button
-                                                className="select-location-btn"
-                                                onClick={() => setShowLocationPicker(true)}
-                                            >
-                                                <MapPin size={20} />
-                                                <div className="btn-content">
-                                                    <span className="btn-title">Select Location</span>
-                                                    <span className="btn-subtitle">Auto-detect or choose manually on map</span>
-                                                </div>
-                                                <ChevronRight size={20} />
-                                            </button>
-                                        )}
+                                            <datalist id="place-suggestions">
+                                                {availablePlaces.map((place, index) => (
+                                                    <option key={index} value={place.name} />
+                                                ))}
+                                            </datalist>
+                                            {reportData.ward && (
+                                                <p className="detected-ward-info" style={{ color: '#10B981', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                                                    <Check size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                                                    Detected: {reportData.ward}
+                                                </p>
+                                            )}
+                                        </div>
                                         <input
                                             type="text"
                                             placeholder="Add landmarks or building name (optional)"
@@ -930,15 +993,6 @@ const CitizenDashboard = ({ onLogout, userName = 'Arun Kumar', ward = 'Ward 14' 
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* Location Picker Modal */}
-            {showLocationPicker && (
-                <LocationPicker
-                    onLocationSelect={handleLocationSelect}
-                    initialLocation={reportData.latitude && reportData.longitude ? [reportData.latitude, reportData.longitude] : null}
-                    onClose={() => setShowLocationPicker(false)}
-                />
             )}
         </div>
     );

@@ -13,7 +13,8 @@ import {
     X,
     LogOut,
     User,
-    Building
+    Building,
+    Megaphone
 } from 'lucide-react';
 import './DepartmentDashboard.css';
 
@@ -649,11 +650,11 @@ const DepartmentDashboard = ({ onLogout, departmentName = "Water Authority", udn
                 <div className="sidebar-header">
                     <div className="logo">
                         <div className="logo-icon dept">
-                            <Building size={24} />
+                            <Megaphone size={24} />
                         </div>
                         <div className="logo-text">
-                            <div className="logo-title">CivicAI</div>
-                            <div className="logo-subtitle">DEPARTMENT PORTAL</div>
+                            <div className="logo-title" style={{ color: '#F9FAFB' }}>JannaShabdha</div>
+                            <div className="logo-subtitle" style={{ color: '#F9FAFB' }}>DEPARTMENT PORTAL</div>
                         </div>
                     </div>
                 </div>
