@@ -1,0 +1,49 @@
+/* Ward Member Login - Extends shared auth styles */
+@import './CitizenLogin.css';
+
+/* Help Box specific to Ward Member Login */
+.help-box {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+    border-left: 4px solid #10B981;
+    border-radius: 8px;
+}
+
+.help-box h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #065F46;
+    margin: 0 0 0.5rem 0;
+}
+
+.help-box p {
+    font-size: 0.8125rem;
+    color: #047857;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Input hint styling */
+.input-hint {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: #6B7280;
+}
+
+/* Link button for switching to register */
+.link-button {
+    background: none;
+    border: none;
+    color: #10B981;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.link-button:hover {
+    color: #059669;
+}

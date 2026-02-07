@@ -1,0 +1,28 @@
+/* Import shared styles */
+@import './CitizenLogin.css';
+
+/* Department Login Specific Styles */
+.department-help {
+    margin-top: 2rem;
+}
+
+.help-box {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+    border-left: 4px solid var(--secondary-blue);
+    border-radius: var(--radius-lg);
+}
+
+.help-box h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.help-box p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}

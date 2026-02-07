@@ -1,0 +1,530 @@
+/* Department Dashboard - Extends Ward Member Dashboard with different color scheme */
+@import './WardMemberDashboard.css';
+
+/* Department-specific color overrides */
+.ward-dashboard.department {
+    --dept-primary: #3B82F6;
+    --dept-primary-dark: #2563EB;
+    --dept-primary-light: #DBEAFE;
+}
+
+/* Sidebar - Blue gradient for department */
+.dashboard-sidebar.dept {
+    background: linear-gradient(180deg, #1E40AF 0%, #1E3A8A 100%);
+}
+
+.logo-icon.dept {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar.dept {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.user-profile.dept {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Queue Status Badge - Blue */
+.queue-status-badge.dept {
+    background: #3B82F6;
+}
+
+/* Stat Icons - Different colors */
+.stat-icon.purple {
+    background: #EDE9FE;
+    color: #8B5CF6;
+}
+
+.stat-icon.blue {
+    background: #DBEAFE;
+    color: #3B82F6;
+}
+
+/* Stat Cards - Department theme */
+.stat-card.dept {
+    border-left: 4px solid #3B82F6;
+}
+
+.stat-badge.success {
+    background: #D1FAE5;
+    color: #10B981;
+}
+
+/* Section Title - Blue accent */
+.section-title.dept {
+    color: #3B82F6;
+}
+
+/* Token Search - Blue focus */
+.token-search.dept:focus-within {
+    border-color: #3B82F6;
+}
+
+/* Token Table - Department styling */
+.token-table.dept {
+    border-color: #DBEAFE;
+}
+
+/* Team Badge */
+.team-badge {
+    padding: 0.375rem 0.75rem;
+    background: #EDE9FE;
+    color: #8B5CF6;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Review Button - Department style */
+.btn-review.dept {
+    border-color: #3B82F6;
+    color: #3B82F6;
+}
+
+.btn-review.dept:hover {
+    background: #DBEAFE;
+    border-color: #2563EB;
+}
+
+/* Queue Status Card - Blue gradient */
+.queue-status-card.dept {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+/* Process Token Button */
+.btn-process-token.dept {
+    color: #3B82F6;
+}
+
+.btn-process-token.dept:hover {
+    background: #EFF6FF;
+}
+
+/* Department Updates */
+.department-updates.dept h3 {
+    color: #1E40AF;
+}
+
+.update-icon.dept {
+    background: #DBEAFE;
+}
+
+/* Analytics Stat Cards */
+.analytics-stat-card.dept {
+    border-left: 3px solid #3B82F6;
+}
+
+.stat-icon-badge.blue {
+    background: #DBEAFE;
+    color: #3B82F6;
+}
+
+/* Weather Widget */
+.weather-widget.dept {
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border: 1px solid #BFDBFE;
+}
+
+/* Progress Cards - Department */
+.progress-card.dept {
+    background: linear-gradient(135deg, #EFF6FF, #F9FAFB);
+    border-color: #BFDBFE;
+}
+
+/* View All Button */
+.view-all-btn.dept {
+    color: #3B82F6;
+    border-color: #BFDBFE;
+}
+
+.view-all-btn.dept:hover {
+    background: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+/* Task Update Item */
+.task-update-item.dept {
+    background: linear-gradient(135deg, #EFF6FF, #F9FAFB);
+}
+
+.task-id-badge.dept {
+    background: #DBEAFE;
+    color: #1E40AF;
+    border-color: #BFDBFE;
+}
+
+/* Team Info */
+.team-info {
+    padding: 0.375rem 0.75rem;
+    background: #EDE9FE;
+    color: #8B5CF6;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Task Stats - Department colors */
+.task-stat .stat-number.purple {
+    color: #8B5CF6;
+}
+
+.task-stats.dept .task-stat {
+    border-left: 3px solid #3B82F6;
+}
+
+/* Token Management Card */
+.token-management-card.dept {
+    border-top: 4px solid #3B82F6;
+}
+
+.card-icon.dept {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* Token Input Group */
+.token-input-group.dept {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+}
+
+.token-input-group.dept:focus-within {
+    border-color: #3B82F6;
+}
+
+/* Check Button */
+.check-btn.dept {
+    background: #3B82F6;
+}
+
+.check-btn.dept:hover {
+    background: #2563EB;
+}
+
+/* Token Details Card */
+.token-details-card.dept {
+    background: linear-gradient(135deg, #EFF6FF, #F9FAFB);
+    border-color: #BFDBFE;
+}
+
+/* Department Select */
+.department-select.dept {
+    border-color: #BFDBFE;
+}
+
+.department-select.dept:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Update Assignment Button */
+.update-assignment-btn.dept {
+    background: #1E40AF;
+}
+
+.update-assignment-btn.dept:hover {
+    background: #1E3A8A;
+}
+
+/* Action Buttons */
+.action-btn.new-task.dept {
+    background: #3B82F6;
+}
+
+.action-btn.new-task.dept:hover {
+    background: #2563EB;
+}
+
+.action-btn.broadcast.dept {
+    background: #EFF6FF;
+    color: #1E40AF;
+    border: 1px solid #BFDBFE;
+}
+
+.action-btn.broadcast.dept:hover {
+    background: #DBEAFE;
+}
+
+/* Department Tasks List */
+.department-tasks-list.dept {
+    border-top: 4px solid #3B82F6;
+}
+
+/* Filter Select */
+.filter-select.dept {
+    border-color: #BFDBFE;
+}
+
+.filter-select.dept:focus {
+    border-color: #3B82F6;
+}
+
+/* Tasks Table */
+.tasks-table.dept .tasks-table-header {
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    color: #1E40AF;
+}
+
+.task-row.dept {
+    background: #F9FAFB;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.task-row.dept:hover {
+    background: #EFF6FF;
+    border-left-color: #3B82F6;
+}
+
+/* Priority Dot - Different colors */
+.priority-dot.high {
+    background: #EF4444;
+}
+
+.priority-dot.medium {
+    background: #F59E0B;
+}
+
+.priority-dot.low {
+    background: #3B82F6;
+}
+
+/* Assignee Avatar - Department */
+.assignee-avatar.dept {
+    background: #3B82F6;
+}
+
+/* Upload Button */
+.upload-btn.dept:hover {
+    background: #3B82F6;
+    border-color: #3B82F6;
+}
+
+/* Department-specific Progress Section */
+.department-progress-section.dept {
+    border-top: 4px solid #3B82F6;
+}
+
+/* Recent Tasks Section */
+.recent-tasks-section.dept {
+    border-top: 4px solid #3B82F6;
+}
+
+/* Subtitle */
+.dept-subtitle {
+    font-size: 0.875rem;
+    color: #6B7280;
+    margin-top: 0.25rem;
+}
+
+/* Additional Department-specific styles */
+.dashboard-header .dept-subtitle {
+    font-weight: 500;
+    color: #3B82F6;
+}
+
+/* Toggle Button Active State - Department */
+.toggle-btn.active {
+    background: #3B82F6;
+    border-color: #3B82F6;
+}
+
+/* Responsive adjustments for department dashboard */
+@media (max-width: 768px) {
+    .team-info {
+        display: none;
+    }
+
+    .task-row.dept {
+        border-left: none;
+        border-top: 3px solid transparent;
+    }
+
+    .task-row.dept:hover {
+        border-top-color: #3B82F6;
+    }
+}
+
+/* Department Dashboard Specific Animations */
+@keyframes dept-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+}
+
+.queue-status-badge.dept .status-dot {
+    animation: dept-pulse 2s infinite;
+}
+
+/* Department-specific hover effects */
+.stat-card.dept:hover {
+    border-left-color: #2563EB;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.progress-card.dept:hover {
+    border-color: #3B82F6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+/* Department badge variations */
+.dept-badge {
+    padding: 0.375rem 0.75rem;
+    background: #DBEAFE;
+    color: #1E40AF;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Task priority indicators for department */
+.task-row.dept[data-priority="high"] {
+    border-left-color: #EF4444;
+}
+
+.task-row.dept[data-priority="medium"] {
+    border-left-color: #F59E0B;
+}
+
+.task-row.dept[data-priority="low"] {
+    border-left-color: #3B82F6;
+}
+
+/* Department performance indicators */
+.performance-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #DBEAFE, #EFF6FF);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1E40AF;
+}
+
+.performance-indicator.excellent {
+    background: linear-gradient(135deg, #D1FAE5, #ECFDF5);
+    color: #065F46;
+}
+
+.performance-indicator.good {
+    background: linear-gradient(135deg, #DBEAFE, #EFF6FF);
+    color: #1E40AF;
+}
+
+.performance-indicator.needs-improvement {
+    background: linear-gradient(135deg, #FEF3C7, #FEF9C3);
+    color: #92400E;
+}
+
+/* Department dashboard loading states */
+.loading-skeleton {
+    background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Department-specific tooltips */
+.dept-tooltip {
+    position: relative;
+}
+
+.dept-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 0.75rem;
+    background: #1E40AF;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-bottom: 0.5rem;
+}
+
+.dept-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* Department notification badges */
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #EF4444;
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+}
+
+/* Department success states */
+.success-message {
+    padding: 1rem;
+    background: linear-gradient(135deg, #D1FAE5, #ECFDF5);
+    border-left: 4px solid #10B981;
+    border-radius: 8px;
+    color: #065F46;
+    font-size: 0.875rem;
+    margin: 1rem 0;
+}
+
+.error-message {
+    padding: 1rem;
+    background: linear-gradient(135deg, #FEE2E2, #FEF2F2);
+    border-left: 4px solid #EF4444;
+    border-radius: 8px;
+    color: #991B1B;
+    font-size: 0.875rem;
+    margin: 1rem 0;
+}
+
+.warning-message {
+    padding: 1rem;
+    background: linear-gradient(135deg, #FEF3C7, #FEF9C3);
+    border-left: 4px solid #F59E0B;
+    border-radius: 8px;
+    color: #92400E;
+    font-size: 0.875rem;
+    margin: 1rem 0;
+}
+
+.info-message {
+    padding: 1rem;
+    background: linear-gradient(135deg, #DBEAFE, #EFF6FF);
+    border-left: 4px solid #3B82F6;
+    border-radius: 8px;
+    color: #1E40AF;
+    font-size: 0.875rem;
+    margin: 1rem 0;
+}

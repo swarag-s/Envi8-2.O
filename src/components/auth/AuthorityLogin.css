@@ -1,0 +1,130 @@
+/* Import shared styles */
+@import './CitizenLogin.css';
+
+/* Authority Selection Specific Styles */
+.authority-selection {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.authority-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(59, 130, 246, 0.05));
+    border: 2px solid var(--neutral-200);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-align: center;
+}
+
+.authority-card:hover {
+    border-color: var(--primary-green);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+}
+
+.authority-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-xl);
+    transition: transform var(--transition-base);
+}
+
+.authority-icon.ward-member {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+    color: var(--primary-green);
+}
+
+.authority-icon.department {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+    color: var(--secondary-blue);
+}
+
+.authority-card:hover .authority-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.authority-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.authority-card p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.card-arrow {
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem;
+    color: var(--primary-green);
+    opacity: 0;
+    transition: all var(--transition-base);
+}
+
+.authority-card:hover .card-arrow {
+    opacity: 1;
+    right: 1.5rem;
+}
+
+.authority-info {
+    margin-top: 1rem;
+}
+
+.info-box {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-left: 4px solid var(--secondary-orange);
+    border-radius: var(--radius-lg);
+}
+
+.info-box h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.info-box p {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .authority-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .authority-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .authority-icon svg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .card-arrow {
+        display: none;
+    }
+}
