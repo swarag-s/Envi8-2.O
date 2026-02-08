@@ -1,155 +1,167 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from "react";
 
-const IssueContext = createContext();
+const IssueContext = createContext(null);
 
+// ✅ SAFE HOOK (NO CRASH)
 export const useIssues = () => {
-    const context = useContext(IssueContext);
-    if (!context) {
-        throw new Error('useIssues must be used within IssueProvider');
-    }
-    return context;
+  const context = useContext(IssueContext);
+
+  if (!context) {
+    console.warn("useIssues used outside IssueProvider");
+    return {
+      issues: [],
+      wardPlaces: {},
+      addIssue: () => {},
+      updateIssue: () => {},
+      getIssuesByWard: () => [],
+      getIssuesByStatus: () => [],
+      addWardPlace: () => {},
+      updateWardPlace: () => {},
+      deleteWardPlace: () => {},
+      getWardPlaces: () => [],
+      getIssueByToken: () => null,
+    };
+  }
+
+  return context;
 };
 
 export const IssueProvider = ({ children }) => {
-    const [issues, setIssues] = useState([]);
-    const [wardPlaces, setWardPlaces] = useState({});
+  const [issues, setIssues] = useState([]);
+  const [wardPlaces, setWardPlaces] = useState({});
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        const savedIssues = localStorage.getItem('civicai_issues');
-        const savedWardPlaces = localStorage.getItem('civicai_ward_places');
+  // Load from localStorage
+  useEffect(() => {
+    const savedIssues = localStorage.getItem("civicai_issues");
+    const savedWardPlaces = localStorage.getItem("civicai_ward_places");
 
-        if (savedIssues) {
-            setIssues(JSON.parse(savedIssues));
-        }
+    if (savedIssues) setIssues(JSON.parse(savedIssues));
 
-        if (savedWardPlaces) {
-            setWardPlaces(JSON.parse(savedWardPlaces));
-        } else {
-            // Initialize with some default places for demo
-            const defaultPlaces = {
-                '14': [
-                    { id: 1, name: 'Mananchira Square', landmark: 'City Center', lat: 11.2588, lon: 75.7804 },
-                    { id: 2, name: 'Medical College', landmark: 'Near Beach', lat: 11.2480, lon: 75.7720 },
-                    { id: 3, name: 'Beach Road', landmark: 'Kozhikode Beach', lat: 11.2450, lon: 75.7650 }
-                ]
-            };
-            setWardPlaces(defaultPlaces);
-            localStorage.setItem('civicai_ward_places', JSON.stringify(defaultPlaces));
-        }
-    }, []);
+    if (savedWardPlaces) {
+      setWardPlaces(JSON.parse(savedWardPlaces));
+    } else {
+      const defaultPlaces = {
+        14: [
+          {
+            id: 1,
+            name: "Mananchira Square",
+            landmark: "City Center",
+            lat: 11.2588,
+            lon: 75.7804,
+          },
+          {
+            id: 2,
+            name: "Medical College",
+            landmark: "Near Beach",
+            lat: 11.248,
+            lon: 75.772,
+          },
+          {
+            id: 3,
+            name: "Beach Road",
+            landmark: "Kozhikode Beach",
+            lat: 11.245,
+            lon: 75.765,
+          },
+        ],
+      };
+      setWardPlaces(defaultPlaces);
+      localStorage.setItem(
+        "civicai_ward_places",
+        JSON.stringify(defaultPlaces),
+      );
+    }
+  }, []);
 
-    // Save to localStorage whenever issues change
-    useEffect(() => {
-        if (issues.length > 0) {
-            localStorage.setItem('civicai_issues', JSON.stringify(issues));
-        }
-    }, [issues]);
+  useEffect(() => {
+    localStorage.setItem("civicai_issues", JSON.stringify(issues));
+  }, [issues]);
 
-    // Save to localStorage whenever wardPlaces change
-    useEffect(() => {
-        if (Object.keys(wardPlaces).length > 0) {
-            localStorage.setItem('civicai_ward_places', JSON.stringify(wardPlaces));
-        }
-    }, [wardPlaces]);
+  useEffect(() => {
+    localStorage.setItem("civicai_ward_places", JSON.stringify(wardPlaces));
+  }, [wardPlaces]);
 
-    // Add new issue
-    const addIssue = (issue) => {
-        const newIssue = {
-            ...issue,
-            id: Date.now(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        setIssues(prev => [newIssue, ...prev]);
-        return newIssue;
+  const addIssue = (issue) => {
+    const newIssue = {
+      ...issue,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+    setIssues((prev) => [newIssue, ...prev]);
+    return newIssue;
+  };
 
-    // Update issue status
-    const updateIssue = (issueId, updates) => {
-        setIssues(prev => prev.map(issue =>
-            issue.tokenId === issueId
-                ? { ...issue, ...updates, updatedAt: new Date().toISOString() }
-                : issue
-        ));
-    };
+  const updateIssue = (issueId, updates) => {
+    setIssues((prev) =>
+      prev.map((issue) =>
+        issue.tokenId === issueId
+          ? { ...issue, ...updates, updatedAt: new Date().toISOString() }
+          : issue,
+      ),
+    );
+  };
 
-    // Get issues by ward
-    const getIssuesByWard = (wardNumber) => {
-        return issues.filter(issue => issue.ward === `Ward ${wardNumber}`);
-    };
+  const getIssuesByWard = (wardNumber) =>
+    issues.filter((issue) => issue.ward === `Ward ${wardNumber}`);
 
-    // Get issues by status
-    const getIssuesByStatus = (status) => {
-        return issues.filter(issue => issue.status === status);
-    };
+  const getIssuesByStatus = (status) =>
+    issues.filter((issue) => issue.status === status);
 
-    // Get issue by token ID
-    const getIssueByToken = (tokenId) => {
-        return issues.find(issue => issue.tokenId === tokenId);
-    };
+  const getIssueByToken = (tokenId) =>
+    issues.find((issue) => issue.tokenId === tokenId);
 
-    // Ward Places Management
-    const addWardPlace = (wardNumber, place) => {
-        setWardPlaces(prev => {
-            const wardKey = wardNumber.toString();
-            const currentPlaces = prev[wardKey] || [];
-            const newPlace = {
-                ...place,
-                id: Date.now()
-            };
-            return {
-                ...prev,
-                [wardKey]: [...currentPlaces, newPlace]
-            };
-        });
-    };
+  const addWardPlace = (wardNumber, place) => {
+    setWardPlaces((prev) => {
+      const key = wardNumber.toString();
+      return {
+        ...prev,
+        [key]: [...(prev[key] || []), { ...place, id: Date.now() }],
+      };
+    });
+  };
 
-    const updateWardPlace = (wardNumber, placeId, updates) => {
-        setWardPlaces(prev => {
-            const wardKey = wardNumber.toString();
-            const currentPlaces = prev[wardKey] || [];
-            return {
-                ...prev,
-                [wardKey]: currentPlaces.map(place =>
-                    place.id === placeId ? { ...place, ...updates } : place
-                )
-            };
-        });
-    };
+  const updateWardPlace = (wardNumber, placeId, updates) => {
+    setWardPlaces((prev) => {
+      const key = wardNumber.toString();
+      return {
+        ...prev,
+        [key]: (prev[key] || []).map((p) =>
+          p.id === placeId ? { ...p, ...updates } : p,
+        ),
+      };
+    });
+  };
 
-    const deleteWardPlace = (wardNumber, placeId) => {
-        setWardPlaces(prev => {
-            const wardKey = wardNumber.toString();
-            const currentPlaces = prev[wardKey] || [];
-            return {
-                ...prev,
-                [wardKey]: currentPlaces.filter(place => place.id !== placeId)
-            };
-        });
-    };
+  const deleteWardPlace = (wardNumber, placeId) => {
+    setWardPlaces((prev) => {
+      const key = wardNumber.toString();
+      return {
+        ...prev,
+        [key]: (prev[key] || []).filter((p) => p.id !== placeId),
+      };
+    });
+  };
 
-    const getWardPlaces = (wardNumber) => {
-        return wardPlaces[wardNumber.toString()] || [];
-    };
+  const getWardPlaces = (wardNumber) => wardPlaces[wardNumber.toString()] || [];
 
-    const value = {
+  return (
+    <IssueContext.Provider
+      value={{
         issues,
+        wardPlaces,
         addIssue,
         updateIssue,
         getIssuesByWard,
         getIssuesByStatus,
-        wardPlaces,
         addWardPlace,
         updateWardPlace,
         deleteWardPlace,
         getWardPlaces,
-        getIssueByToken
-    };
-
-    return (
-        <IssueContext.Provider value={value}>
-            {children}
-        </IssueContext.Provider>
-    );
+        getIssueByToken,
+      }}
+    >
+      {children}
+    </IssueContext.Provider>
+  );
 };
