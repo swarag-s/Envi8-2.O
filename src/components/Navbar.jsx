@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Menu, X, Megaphone, LogIn, UserPlus } from 'lucide-react';
-import './Navbar.css';
+import { useState, useEffect } from "react";
+import { Menu, X, Megaphone, LogIn, UserPlus } from "lucide-react";
+import "./Navbar.css";
 
 const Navbar = ({ onLoginClick }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -11,26 +11,26 @@ const Navbar = ({ onLoginClick }) => {
       setIsScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'About Us', href: '#about' },
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Impact', href: '#impact' },
-    { name: 'Contact', href: '#contact' },
+    { name: "Home", href: "#home" },
+    { name: "About Us", href: "#about" },
+    { name: "How It Works", href: "#how-it-works" },
+    { name: "Impact", href: "#impact" },
+    { name: "Contact", href: "#contact" },
   ];
 
   return (
-    <nav className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
+    <nav className={`navbar ${isScrolled ? "navbar-scrolled" : ""}`}>
       <div className="container">
         <div className="navbar-content">
           {/* Logo */}
           <div className="navbar-logo">
             <Megaphone className="logo-icon" size={32} strokeWidth={2.5} />
-            <span className="logo-text">JannaShabdha</span>
+            <span className="logo-text">JanaShabdha</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -78,11 +78,17 @@ const Navbar = ({ onLoginClick }) => {
               </a>
             ))}
             <div className="mobile-menu-actions">
-              <button className="btn btn-outline btn-full" onClick={onLoginClick}>
+              <button
+                className="btn btn-outline btn-full"
+                onClick={onLoginClick}
+              >
                 <LogIn size={18} />
                 Login
               </button>
-              <button className="btn btn-primary btn-full" onClick={onLoginClick}>
+              <button
+                className="btn btn-primary btn-full"
+                onClick={onLoginClick}
+              >
                 <UserPlus size={18} />
                 Register
               </button>
